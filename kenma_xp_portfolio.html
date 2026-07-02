@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Kenma - Escritorio</title>
+<style>
+  :root{
+    --tb-start:#245edb; --tb-end:#3f8cf3; --tb-shine:#7fb2ff;
+    --title-start:#0a5cd1; --title-end:#3f95fb; --title-glow:#9fd0ff;
+    --start-a:#3d9e1f; --start-b:#7ec850;
+    --win-bg:#ece9d8; --win-border:#0047ab;
+    --desk-top:#1c5cc4; --desk-mid:#4f97e0; --desk-hill1:#3f8f2e; --desk-hill2:#5cb43e; --desk-sky:#a9d6ff;
+    --accent-text:#ffffff;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;margin:0;}
+  body{
+    font-family:'Segoe UI', Tahoma, Verdana, sans-serif;
+    overflow:hidden;
+    user-select:none;
+  }
+  #desktop{
+    position:relative;
+    width:100%;
+    height:100vh;
+    background:
+      linear-gradient(to bottom, var(--desk-sky) 0%, var(--desk-sky) 45%, var(--desk-mid) 55%, var(--desk-hill2) 62%, var(--desk-hill1) 100%);
+    overflow:hidden;
+  }
+  #desktop::before, #desktop::after{
+    content:"";
+    position:absolute;
+    border-radius:50%;
+    opacity:.55;
+  }
+  #desktop::before{
+    width:900px;height:900px; background:var(--desk-hill2);
+    left:-250px; bottom:-680px;
+  }
+  #desktop::after{
+    width:1200px;height:1200px; background:var(--desk-hill1);
+    right:-400px; bottom:-950px;
+  }
+  #sun{
+    position:absolute; top:40px; right:80px;
+    width:70px;height:70px;border-radius:50%;
+    background:radial-gradient(circle at 35% 35%, #fff9d6, #ffe066 60%, #ffd23f 100%);
+    box-shadow:0 0 40px 10px rgba(255,224,102,.6);
+  }
+  #cloud1,#cloud2{
+    position:absolute; background:#fff; border-radius:50px;
+    opacity:.85; filter:blur(.5px);
+  }
+  #cloud1{ width:140px;height:36px; top:90px; left:120px; box-shadow: 40px -14px 0 -6px #fff, 80px 4px 0 -10px #fff;}
+  #cloud2{ width:100px;height:28px; top:150px; left:60%; box-shadow: 34px -10px 0 -6px #fff;}
+
+  .icon{
+    position:absolute;
+    width:80px;
+    text-align:center;
+    cursor:pointer;
+    padding:6px;
+    border-radius:3px;
+  }
+  .icon.selected{ background:rgba(20,80,190,.35); outline:1px dotted #cfe4ff; }
+  .icon .glyph{
+    width:44px;height:44px;margin:0 auto 4px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .icon .glyph svg{ width:44px;height:44px; filter:drop-shadow(1px 2px 1px rgba(0,0,0,.4)); }
+  .icon .label{
+    color:#fff; font-size:11px; line-height:1.25;
+    text-shadow:1px 1px 2px rgba(0,0,0,.85);
+  }
+
+  /* ---------- Windows ---------- */
+  .window{
+    position:absolute;
+    min-width:300px;
+    background:var(--win-bg);
+    border:1px solid var(--win-border);
+    border-radius:8px 8px 3px 3px;
+    box-shadow:3px 3px 12px rgba(0,0,0,.5);
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+  }
+  .titlebar{
+    height:30px;
+    background:linear-gradient(180deg, var(--title-glow) 0%, var(--title-start) 18%, var(--title-end) 60%, var(--title-start) 100%);
+    display:flex; align-items:center;
+    padding:2px 3px 2px 6px;
+    cursor:grab;
+    flex-shrink:0;
+  }
+  .titlebar .ttext{
+    flex:1; color:#fff; font-weight:bold; font-size:13px;
+    text-shadow:1px 1px 1px rgba(0,0,0,.5);
+    display:flex; align-items:center; gap:6px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .tbtns{ display:flex; gap:2px; }
+  .tbtns button{
+    width:22px;height:20px;
+    border:1px solid rgba(255,255,255,.6);
+    border-radius:3px;
+    background:linear-gradient(180deg,#4f9cff,#0b5cc9);
+    color:#fff; font-weight:bold; font-size:12px;
+    cursor:pointer; line-height:1;
+  }
+  .tbtns button.close{ background:linear-gradient(180deg,#ff8a7a,#d32b1e); }
+  .tbtns button:hover{ filter:brightness(1.15); }
+
+  .menubar{
+    background:#f1efe2; border-bottom:1px solid #b8b19a;
+    font-size:12px; padding:2px 8px; display:flex; gap:14px; color:#333;
+    flex-shrink:0;
+  }
+  .content{
+    flex:1; overflow:auto; padding:14px; background:var(--win-bg); font-size:13px; color:#222;
+  }
+  .content.white{ background:#fff; }
+  .statusbar{
+    background:#ece9d8; border-top:1px solid #b8b19a; font-size:11px; color:#555; padding:2px 8px; flex-shrink:0;
+  }
+
+  /* ---------- Taskbar ---------- */
+  #taskbar{
+    position:absolute; left:0; right:0; bottom:0; height:34px;
+    background:linear-gradient(180deg, var(--tb-shine) 0%, var(--tb-start) 15%, var(--tb-end) 55%, var(--tb-start) 100%);
+    display:flex; align-items:center;
+    border-top:1px solid #8fc0ff;
+    z-index:5000;
+  }
+  #startbtn{
+    height:100%; display:flex; align-items:center; gap:6px;
+    padding:0 14px 0 8px;
+    background:linear-gradient(180deg, var(--start-b), var(--start-a));
+    border-radius:0 10px 10px 0;
+    border-right:2px solid #1f4d13;
+    color:#fff; font-weight:bold; font-style:italic; font-size:15px;
+    cursor:pointer;
+    text-shadow:1px 1px 1px rgba(0,0,0,.4);
+  }
+  #startbtn:hover{ filter:brightness(1.1); }
+  #startbtn svg{ width:22px;height:22px; }
+  #tasks{ flex:1; display:flex; gap:4px; padding:0 6px; height:100%; align-items:center; overflow:hidden; }
+  .taskitem{
+    height:24px; max-width:170px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    background:linear-gradient(180deg,#5b9ef2,#1f5fc7);
+    border:1px solid #164a9c; border-radius:3px; color:#fff; font-size:11px;
+    display:flex; align-items:center; gap:5px; padding:0 8px; cursor:pointer;
+  }
+  .taskitem.active{ background:linear-gradient(180deg,#1f5fc7,#5b9ef2); box-shadow:inset 0 0 4px #000; }
+  #clock{
+    color:#fff; font-size:12px; padding:0 14px; border-left:1px solid #1f4d90; height:100%;
+    display:flex; align-items:center; text-shadow:1px 1px 1px rgba(0,0,0,.4);
+  }
+
+  /* ---------- Start Menu ---------- */
+  #startmenu{
+    position:absolute; bottom:34px; left:0;
+    width:290px;
+    background:#fff;
+    border:2px solid var(--title-start);
+    border-radius:8px 8px 0 0;
+    box-shadow:3px -3px 14px rgba(0,0,0,.5);
+    display:none;
+    z-index:6000;
+    overflow:hidden;
+  }
+  #startmenu .userbar{
+    background:linear-gradient(180deg, var(--title-glow), var(--title-start));
+    padding:10px; display:flex; align-items:center; gap:10px;
+  }
+  #startmenu .avatar{
+    width:40px;height:40px;border-radius:5px;background:#fff;border:2px solid #fff;
+    display:flex;align-items:center;justify-content:center;font-size:20px;
+  }
+  #startmenu .uname{ color:#fff; font-weight:bold; font-size:15px; text-shadow:1px 1px 1px rgba(0,0,0,.4); }
+  #startmenu .items{ padding:8px; display:flex; flex-direction:column; gap:2px;}
+  #startmenu .mitem{
+    display:flex; align-items:center; gap:10px; padding:6px 8px; border-radius:4px; cursor:pointer; font-size:13px; color:#1a1a1a;
+  }
+  #startmenu .mitem:hover{ background:#3f8cf3; color:#fff; }
+  #startmenu .mitem .g{ width:24px;height:24px; display:flex; align-items:center; justify-content:center;}
+  #startmenu .mitem .g svg{ width:22px;height:22px; }
+  #startmenu .footer{ background:linear-gradient(180deg,#3f8cf3,#0a5cd1); padding:6px; text-align:right;}
+  #startmenu .footer span{ color:#fff; font-size:11px; padding:6px 10px; cursor:pointer; border-radius:3px;}
+  #startmenu .footer span:hover{ background:rgba(255,255,255,.2); }
+  #startmenu hr{ border:none; border-top:1px solid #d8d8d8; margin:4px 4px; }
+
+  /* ---------- Context menu ---------- */
+  #ctxmenu{
+    position:absolute; display:none; z-index:7000;
+    background:#fff; border:1px solid #7c9bce; box-shadow:2px 2px 8px rgba(0,0,0,.4);
+    padding:3px; min-width:170px; font-size:12px;
+    border-radius:2px;
+  }
+  #ctxmenu .citem{ padding:6px 10px; cursor:pointer; color:#222; }
+  #ctxmenu .citem:hover{ background:#3f8cf3; color:#fff; }
+  #ctxmenu hr{ border:none; border-top:1px solid #ddd; margin:3px 0; }
+
+  /* Theme swatches */
+  .swatch{
+    display:inline-flex; align-items:center; gap:10px; width:100%;
+    padding:8px; margin-bottom:6px; border:2px solid transparent; border-radius:4px; cursor:pointer; background:#f6f5ee;
+  }
+  .swatch:hover{ border-color:#3f8cf3; }
+  .swatch .preview{ width:60px;height:34px; border-radius:3px; border:1px solid #999; }
+  .swatch.active{ border-color:#0a5cd1; background:#dbe8ff; }
+
+  a{ color:#0a4fbf; }
+  .badge{
+    display:inline-block; background:#ffe066; border:1px solid #d4a70a; border-radius:3px;
+    padding:1px 6px; font-size:11px; margin-left:6px;
+  }
+  .proj-card{
+    border:1px solid #b8b19a; border-radius:6px; background:#fff; padding:12px; margin-bottom:10px;
+  }
+  .proj-card h3{ margin:0 0 6px; color:#0a4fbf; }
+  .tag{ display:inline-block; background:#e5efff; border:1px solid #a9c6ff; color:#0a4fbf; font-size:11px; padding:1px 6px; border-radius:8px; margin-right:4px;}
+  .tiktok-btn{
+    display:inline-flex; align-items:center; gap:8px; background:#111; color:#fff; padding:8px 14px;
+    border-radius:4px; text-decoration:none; font-weight:bold; font-size:13px; margin-top:8px;
+  }
+  .tiktok-btn:hover{ background:#000; }
+
+  ::-webkit-scrollbar{ width:16px; }
+  ::-webkit-scrollbar-track{ background:#ece9d8; }
+  ::-webkit-scrollbar-thumb{ background:linear-gradient(180deg,#8fc0ff,#3f8cf3); border:1px solid #6699cc; }
+</style>
+</head>
+<body>
+
+<div id="desktop">
+  <div id="sun"></div>
+  <div id="cloud1"></div>
+  <div id="cloud2"></div>
+
+  <!-- ICONS -->
+  <div class="icon" style="top:16px;left:16px" data-open="mipc">
+    <div class="glyph">
+      <svg viewBox="0 0 44 44"><rect x="4" y="8" width="36" height="22" rx="2" fill="#c9d6e5" stroke="#5b7fa6" stroke-width="1.5"/><rect x="8" y="11" width="28" height="14" fill="#2255aa"/><rect x="14" y="32" width="16" height="4" fill="#8fa0b5"/><rect x="10" y="36" width="24" height="3" rx="1" fill="#9fb0c5"/></svg>
+    </div>
+    <div class="label">Mi PC</div>
+  </div>
+
+  <div class="icon" style="top:110px;left:16px" data-open="about">
+    <div class="glyph">
+      <svg viewBox="0 0 44 44"><rect x="8" y="4" width="28" height="36" fill="#fffdf0" stroke="#c8b96a" stroke-width="1.5"/><rect x="8" y="4" width="28" height="7" fill="#f6c945"/><line x1="12" y1="16" x2="32" y2="16" stroke="#999" stroke-width="1"/><line x1="12" y1="21" x2="32" y2="21" stroke="#999" stroke-width="1"/><line x1="12" y1="26" x2="32" y2="26" stroke="#999" stroke-width="1"/><line x1="12" y1="31" x2="24" y2="31" stroke="#999" stroke-width="1"/></svg>
+    </div>
+    <div class="label">Sobre Kenma</div>
+  </div>
+
+  <div class="icon" style="top:204px;left:16px" data-open="proyectos">
+    <div class="glyph">
+      <svg viewBox="0 0 44 44"><path d="M4 12 L16 12 L20 16 L40 16 L40 36 L4 36 Z" fill="#ffd45e" stroke="#c99a1f" stroke-width="1.5"/></svg>
+    </div>
+    <div class="label">Proyectos</div>
+  </div>
+
+  <div class="icon" style="top:298px;left:16px" data-open="musica">
+    <div class="glyph">
+      <svg viewBox="0 0 44 44"><rect x="4" y="6" width="36" height="32" rx="3" fill="#222" stroke="#555" stroke-width="1"/><circle cx="22" cy="22" r="10" fill="#3f8cf3"/><circle cx="22" cy="22" r="3" fill="#ece9d8"/><rect x="4" y="6" width="36" height="6" fill="#3f8cf3"/></svg>
+    </div>
+    <div class="label">Estudio Musical</div>
+  </div>
+
+  <div class="icon" style="top:392px;left:16px" data-open="contacto">
+    <div class="glyph">
+      <svg viewBox="0 0 44 44"><circle cx="22" cy="22" r="18" fill="#111"/><path d="M22 8 a14 14 0 0 1 0 28" fill="none" stroke="#fff" stroke-width="1"/><path d="M22 8 a14 14 0 0 0 0 28" fill="none" stroke="#fff" stroke-width="1"/><line x1="4" y1="22" x2="40" y2="22" stroke="#fff" stroke-width="1"/><text x="22" y="26" font-size="10" fill="#25f4ee" text-anchor="middle" font-family="Arial" font-weight="bold">TT</text></svg>
+    </div>
+    <div class="label">Contacto (TikTok)</div>
+  </div>
+
+  <div class="icon" style="top:486px;left:16px" data-open="papelera">
+    <div class="glyph">
+      <svg viewBox="0 0 44 44"><path d="M10 14 L34 14 L31 38 L13 38 Z" fill="#dfe6ee" stroke="#7d8fa6" stroke-width="1.5"/><rect x="7" y="10" width="30" height="5" fill="#b7c3d4" stroke="#7d8fa6" stroke-width="1"/><rect x="17" y="4" width="10" height="6" fill="#b7c3d4" stroke="#7d8fa6" stroke-width="1"/></svg>
+    </div>
+    <div class="label">Papelera</div>
+  </div>
+
+  <!-- WINDOWS render aquí -->
+  <div id="windows-layer"></div>
+
+  <!-- TASKBAR -->
+  <div id="taskbar">
+    <div id="startbtn">
+      <svg viewBox="0 0 24 24"><rect x="2" y="2" width="9" height="9" fill="#fff"/><rect x="13" y="2" width="9" height="9" fill="#fff" opacity=".85"/><rect x="2" y="13" width="9" height="9" fill="#fff" opacity=".85"/><rect x="13" y="13" width="9" height="9" fill="#fff" opacity=".7"/></svg>
+      inicio
+    </div>
+    <div id="tasks"></div>
+    <div id="clock">--:--</div>
+  </div>
+
+  <!-- START MENU -->
+  <div id="startmenu">
+    <div class="userbar">
+      <div class="avatar">🎧</div>
+      <div class="uname">Kenma</div>
+    </div>
+    <div class="items">
+      <div class="mitem" data-open="about"><div class="g">📝</div> Sobre Kenma</div>
+      <div class="mitem" data-open="proyectos"><div class="g">📁</div> Proyectos</div>
+      <div class="mitem" data-open="musica"><div class="g">🎵</div> Estudio Musical</div>
+      <div class="mitem" data-open="contacto"><div class="g">📱</div> Contacto</div>
+      <hr>
+      <div class="mitem" data-open="propiedades"><div class="g">🎨</div> Panel de control (Personalizar)</div>
+      <div class="mitem" data-open="mipc"><div class="g">💻</div> Mi PC</div>
+    </div>
+    <div class="footer"><span id="closemenu">Cerrar sesión ▸</span></div>
+  </div>
+
+  <!-- CONTEXT MENU -->
+  <div id="ctxmenu">
+    <div class="citem" data-open="propiedades">🎨 Propiedades (Personalizar)</div>
+    <hr>
+    <div class="citem" id="ctx-organize">Organizar iconos</div>
+  </div>
+</div>
+
+<script>
+const desktop = document.getElementById('desktop');
+const layer = document.getElementById('windows-layer');
+const tasks = document.getElementById('tasks');
+let zTop = 100;
+let openWins = {}; // id -> {el, taskEl}
+
+const CONTENT = {
+  mipc: {
+    title:'Mi PC', icon:'💻', w:460,h:300,
+    body:`
+      <div style="display:flex;gap:16px;flex-wrap:wrap;">
+        <div style="text-align:center;width:100px;">
+          <div style="font-size:38px;">💽</div>
+          <div style="font-size:12px;">Disco Local (C:)<br><b>Habilidades</b></div>
+        </div>
+        <div style="text-align:center;width:100px;">
+          <div style="font-size:38px;">💽</div>
+          <div style="font-size:12px;">Disco Local (D:)<br><b>Proyectos</b></div>
+        </div>
+        <div style="text-align:center;width:100px;">
+          <div style="font-size:38px;">💿</div>
+          <div style="font-size:12px;">Unidad (E:)<br><b>Java Plugins</b></div>
+        </div>
+      </div>
+      <hr>
+      <p><b>Propietario:</b> Kenma<br>
+      <b>Rol:</b> Artista / Músico · Desarrollador de plugins en Java<br>
+      <b>Estado:</b> Dev Aprendiz — siempre compilando algo nuevo 🔧</p>
+    `
+  },
+  about: {
+    title:'Sobre Kenma - Bloc de notas', icon:'📝', w:420,h:320, isNotepad:true,
+    body:`Hola, soy Kenma.
+
+Soy artista y músico, y también me estoy metiendo de lleno
+al desarrollo: ando aprendiendo a programar plugins en Java.
+
+Me identifico como un "Dev Aprendiz" — todavía en curva de
+aprendizaje, pero construyendo cosas reales mientras aprendo.
+
+Mezclo dos mundos: el creativo (música) y el técnico (código),
+y este escritorio es justo eso: una vitrina personalizable
+a mi gusto, como en los viejos tiempos de Windows XP.
+
+-- Kenma`
+  },
+  proyectos: {
+    title:'Proyectos', icon:'📁', w:480,h:340,
+    body:`
+      <div class="proj-card">
+        <h3>🗺️ Elysium</h3>
+        <p>Mi proyecto insignia. Un desarrollo donde combino mi lado
+        creativo con lo técnico — actualmente en construcción mientras
+        sigo aprendiendo a programar plugins en Java.</p>
+        <span class="tag">Java</span><span class="tag">Plugin</span><span class="tag">En desarrollo</span>
+      </div>
+      <div class="proj-card" style="opacity:.6;">
+        <h3>➕ Próximamente...</h3>
+        <p>Nuevos plugins y producciones musicales en camino. Vuelve pronto.</p>
+      </div>
+    `
+  },
+  musica: {
+    title:'Estudio Musical - Reproductor', icon:'🎵', w:380,h:280,
+    body:`
+      <div style="text-align:center;">
+        <div style="width:140px;height:140px;margin:0 auto 12px;border-radius:50%;
+          background:conic-gradient(#3f8cf3,#111,#3f8cf3);
+          display:flex;align-items:center;justify-content:center;box-shadow:0 0 10px rgba(0,0,0,.4);">
+          <div style="width:50px;height:50px;border-radius:50%;background:#ece9d8;"></div>
+        </div>
+        <p><b>Kenma</b><br>Artista / Músico</p>
+        <p style="font-size:12px;color:#555;">Combinando producción musical con desarrollo de
+        plugins en Java — el sonido y el código, del mismo lado del escritorio.</p>
+      </div>
+    `
+  },
+  contacto: {
+    title:'Contacto', icon:'📱', w:380,h:250,
+    body:`
+      <p>¿Quieres ver más de lo que hago o simplemente saludar?
+      Encuéntrame en TikTok:</p>
+      <a class="tiktok-btn" href="https://www.tiktok.com/@hookkkaaaarrrrruuuuuu" target="_blank" rel="noopener">
+        ▶ @hookkkaaaarrrrruuuuuu
+      </a>
+      <p style="margin-top:14px;font-size:12px;color:#555;">Se abrirá en una pestaña nueva.</p>
+    `
+  },
+  papelera: {
+    title:'Papelera de reciclaje', icon:'🗑️', w:340,h:180,
+    body:`<p style="text-align:center;color:#777;padding-top:30px;">La papelera está vacía.<br>(Aquí no se borra nada importante 😉)</p>`
+  },
+  propiedades: {
+    title:'Propiedades de pantalla - Personalizar', icon:'🎨', w:420,h:400,
+    body:`
+      <p><b>Elige un tema para tu escritorio:</b></p>
+      <div class="swatch active" data-theme="luna">
+        <div class="preview" style="background:linear-gradient(90deg,#245edb,#7ec850);"></div>
+        <div>Luna clásico (Azul/Verde) — <i>predeterminado</i></div>
+      </div>
+      <div class="swatch" data-theme="plata">
+        <div class="preview" style="background:linear-gradient(90deg,#7a7f8c,#c9cdd6);"></div>
+        <div>Plata (Silver)</div>
+      </div>
+      <div class="swatch" data-theme="oliva">
+        <div class="preview" style="background:linear-gradient(90deg,#4b5e2a,#8a9a4a);"></div>
+        <div>Oliva</div>
+      </div>
+      <div class="swatch" data-theme="rosa">
+        <div class="preview" style="background:linear-gradient(90deg,#d1478c,#ffb6d9);"></div>
+        <div>Fucsia energía</div>
+      </div>
+      <p style="font-size:11px;color:#666;margin-top:10px;">El cambio se aplica al instante a toda tu sesión.</p>
+    `
+  }
+};
+
+const THEMES = {
+  luna:{ '--tb-start':'#245edb','--tb-end':'#3f8cf3','--tb-shine':'#7fb2ff','--title-start':'#0a5cd1','--title-end':'#3f95fb','--title-glow':'#9fd0ff','--start-a':'#3d9e1f','--start-b':'#7ec850','--desk-mid':'#4f97e0','--desk-hill1':'#3f8f2e','--desk-hill2':'#5cb43e','--desk-sky':'#a9d6ff'},
+  plata:{ '--tb-start':'#5c6270','--tb-end':'#9aa0ac','--tb-shine':'#c7ccd4','--title-start':'#4b505c','--title-end':'#868c98','--title-glow':'#c7ccd4','--start-a':'#4a4f59','--start-b':'#7f8593','--desk-mid':'#7d8390','--desk-hill1':'#3a3f47','--desk-hill2':'#565c66','--desk-sky':'#c3c8d1'},
+  oliva:{ '--tb-start':'#4b5e2a','--tb-end':'#7f9a4a','--tb-shine':'#a9c46f','--title-start':'#3c4d1f','--title-end':'#6c8a38','--title-glow':'#a9c46f','--start-a':'#7a4d1f','--start-b':'#b58037','--desk-mid':'#6a8a3e','--desk-hill1':'#33421c','--desk-hill2':'#516b2b','--desk-sky':'#cdd9a8'},
+  rosa:{ '--tb-start':'#a8256f','--tb-end':'#e0559f','--tb-shine':'#ffa9d6','--title-start':'#8f1a5e','--title-end':'#d1478c','--title-glow':'#ffb6d9','--start-a':'#1f8f9e','--start-b':'#4fc7d6','--desk-mid':'#c05aa0','--desk-hill1':'#7a1f5c','--desk-hill2':'#b03f86','--desk-sky':'#ffd6ec'}
+};
+
+function applyTheme(name){
+  const t = THEMES[name];
+  if(!t) return;
+  for(const k in t) document.documentElement.style.setProperty(k, t[k]);
+  document.querySelectorAll('.swatch').forEach(s=>s.classList.toggle('active', s.dataset.theme===name));
+}
+
+function openWindow(id){
+  if(openWins[id]){
+    focusWindow(id);
+    if(openWins[id].minimized) toggleMinimize(id);
+    return;
+  }
+  const cfg = CONTENT[id];
+  if(!cfg) return;
+
+  const win = document.createElement('div');
+  win.className = 'window';
+  win.style.width = cfg.w+'px';
+  win.style.height = cfg.h+'px';
+  const offset = Object.keys(openWins).length * 26;
+  win.style.left = (60+offset)+'px';
+  win.style.top = (50+offset)+'px';
+  win.style.zIndex = ++zTop;
+
+  win.innerHTML = `
+    <div class="titlebar">
+      <div class="ttext">${cfg.icon} ${cfg.title}</div>
+      <div class="tbtns">
+        <button class="min">_</button>
+        <button class="max">□</button>
+        <button class="close">×</button>
+      </div>
+    </div>
+    ${cfg.isNotepad? `<div class="menubar"><span>Archivo</span><span>Editar</span><span>Formato</span><span>Ver</span></div>` : ''}
+    <div class="content ${cfg.isNotepad?'white':''}" style="${cfg.isNotepad?'font-family:Consolas,monospace;white-space:pre-wrap;':''}">${cfg.body}</div>
+    <div class="statusbar">${cfg.isNotepad? 'Ln 1, Col 1' : 'Listo'}</div>
+  `;
+  layer.appendChild(win);
+
+  // taskbar entry
+  const taskEl = document.createElement('div');
+  taskEl.className = 'taskitem active';
+  taskEl.textContent = cfg.icon + ' ' + cfg.title;
+  taskEl.addEventListener('click', ()=>{
+    if(openWins[id].minimized){ toggleMinimize(id); focusWindow(id); }
+    else if(zIsTop(win)){ toggleMinimize(id); }
+    else { focusWindow(id); }
+  });
+  tasks.appendChild(taskEl);
+
+  openWins[id] = { el:win, taskEl, minimized:false };
+
+  // dragging
+  const titlebar = win.querySelector('.titlebar');
+  let drag=null;
+  titlebar.addEventListener('mousedown', (e)=>{
+    if(e.target.tagName==='BUTTON') return;
+    focusWindow(id);
+    drag = {sx:e.clientX, sy:e.clientY, ox:win.offsetLeft, oy:win.offsetTop};
+    titlebar.style.cursor='grabbing';
+  });
+  window.addEventListener('mousemove', (e)=>{
+    if(!drag) return;
+    win.style.left = Math.max(0, drag.ox + (e.clientX-drag.sx)) + 'px';
+    win.style.top = Math.max(0, drag.oy + (e.clientY-drag.sy)) + 'px';
+  });
+  window.addEventListener('mouseup', ()=>{ drag=null; titlebar.style.cursor='grab'; });
+
+  win.addEventListener('mousedown', ()=>focusWindow(id));
+
+  win.querySelector('.close').addEventListener('click', ()=>closeWindow(id));
+  win.querySelector('.min').addEventListener('click', ()=>toggleMinimize(id));
+  let maxed=false, prevRect=null;
+  win.querySelector('.max').addEventListener('click', ()=>{
+    if(!maxed){
+      prevRect = {l:win.style.left,t:win.style.top,w:win.style.width,h:win.style.height};
+      win.style.left='0px'; win.style.top='0px'; win.style.width='100%'; win.style.height='calc(100% - 34px)';
+      maxed=true;
+    } else {
+      win.style.left=prevRect.l; win.style.top=prevRect.t; win.style.width=prevRect.w; win.style.height=prevRect.h;
+      maxed=false;
+    }
+  });
+
+  // theme swatches wiring
+  if(id==='propiedades'){
+    win.querySelectorAll('.swatch').forEach(sw=>{
+      sw.addEventListener('click', ()=> applyTheme(sw.dataset.theme));
+    });
+  }
+
+  focusWindow(id);
+}
+
+function zIsTop(win){ return parseInt(win.style.zIndex) === zTop; }
+
+function focusWindow(id){
+  const w = openWins[id];
+  if(!w) return;
+  w.el.style.zIndex = ++zTop;
+  w.el.style.display='flex';
+  w.minimized=false;
+  document.querySelectorAll('.taskitem').forEach(t=>t.classList.remove('active'));
+  w.taskEl.classList.add('active');
+}
+
+function toggleMinimize(id){
+  const w = openWins[id];
+  if(!w) return;
+  w.minimized = !w.minimized;
+  w.el.style.display = w.minimized? 'none':'flex';
+  w.taskEl.classList.toggle('active', !w.minimized);
+}
+
+function closeWindow(id){
+  const w = openWins[id];
+  if(!w) return;
+  w.el.remove();
+  w.taskEl.remove();
+  delete openWins[id];
+}
+
+// icon interactions
+document.querySelectorAll('.icon').forEach(icn=>{
+  icn.addEventListener('click', (e)=>{
+    document.querySelectorAll('.icon').forEach(i=>i.classList.remove('selected'));
+    icn.classList.add('selected');
+  });
+  icn.addEventListener('dblclick', ()=> openWindow(icn.dataset.open));
+});
+
+// start menu items also open windows
+document.querySelectorAll('#startmenu .mitem').forEach(mi=>{
+  mi.addEventListener('click', ()=>{
+    openWindow(mi.dataset.open);
+    document.getElementById('startmenu').style.display='none';
+  });
+});
+
+// start button
+const startmenu = document.getElementById('startmenu');
+document.getElementById('startbtn').addEventListener('click', (e)=>{
+  e.stopPropagation();
+  startmenu.style.display = startmenu.style.display==='block' ? 'none' : 'block';
+});
+document.getElementById('closemenu').addEventListener('click', ()=>{ startmenu.style.display='none'; });
+
+// deselect icons / close menus on desktop click
+desktop.addEventListener('click', (e)=>{
+  if(e.target===desktop){
+    document.querySelectorAll('.icon').forEach(i=>i.classList.remove('selected'));
+  }
+  startmenu.style.display='none';
+  document.getElementById('ctxmenu').style.display='none';
+});
+
+// context menu
+const ctxmenu = document.getElementById('ctxmenu');
+desktop.addEventListener('contextmenu', (e)=>{
+  e.preventDefault();
+  ctxmenu.style.left = e.clientX+'px';
+  ctxmenu.style.top = e.clientY+'px';
+  ctxmenu.style.display='block';
+});
+ctxmenu.querySelectorAll('.citem').forEach(ci=>{
+  ci.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    if(ci.dataset.open) openWindow(ci.dataset.open);
+    ctxmenu.style.display='none';
+  });
+});
+
+// clock
+function tick(){
+  const d = new Date();
+  let h = d.getHours(), m = d.getMinutes();
+  const ampm = h>=12?'p.m.':'a.m.';
+  h = h%12; if(h===0) h=12;
+  document.getElementById('clock').textContent = `${h}:${m.toString().padStart(2,'0')} ${ampm}`;
+}
+tick(); setInterval(tick, 10000);
+
+// welcome
+setTimeout(()=> openWindow('about'), 500);
+</script>
+</body>
+</html>
